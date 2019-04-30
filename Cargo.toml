@@ -1,0 +1,6 @@
+[package]
+name = "compilethyme"
+version = "0.1.0"
+authors = ["Richard Lupton <richard.lupton@gmail.com>"]
+
+[dependencies]
