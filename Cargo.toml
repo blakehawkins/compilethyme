@@ -1,7 +1,7 @@
 [package]
 name = "compilethyme"
 version = "0.1.0"
-build "build.rs"  # LALRPOP preprocessing
+build = "build.rs"  # LALRPOP preprocessing
 authors = [
   "Richard Lupton <richard.lupton@gmail.com>",
   "Blake Hawkins <blake.hawkins.11@gmail.com>"
