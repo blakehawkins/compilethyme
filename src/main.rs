@@ -11,26 +11,8 @@ lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
 
 use failure::Error;
 
-#[derive(Debug, Clone)]
-enum Op {
-    Add
-}
-
-#[derive(Debug, Clone)]
-enum Term {
-    T,
-    F,
-    Num(i64),
-    BinOp(Op, Box<Term>, Box<Term>),
-    IfThenElse(Box<Term>, Box<Term>, Box<Term>),
-}
-
-
-#[derive(Debug, Clone, PartialEq)]
-enum Type {
-    TyBool,
-    TyInt
-}
+use ast::{Op, Term, Type};
+mod ast;
 
 fn main() {
     // println!(
