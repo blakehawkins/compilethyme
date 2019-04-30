@@ -40,6 +40,7 @@ fn compile(file: &str) -> Result<(), Error> {
     let source = std::fs::read_to_string(file)?;
     let expr = ast_parser::TermParser::new().parse(&source).unwrap();
 
+    println!("{:?}", expr);
     typecheck(&expr)?;
 
     let mut genvar = {
@@ -81,7 +82,7 @@ fn type_of(term: &Term) -> Result<Type, Error> {
 
             if ty1 != Type::TyInt || ty2 != Type::TyInt {
                 Err(ThymeError::TypeError{
-                    err: "Non-numeric types in addition".into()
+                    err: format!("Non numeric types in addition; {:?}: {:?}, {:?}, {:?}", t1, ty1, t2, ty2)
                 })?
             } else {
                 Ok(Type::TyInt)
