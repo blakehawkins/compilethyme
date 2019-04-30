@@ -45,7 +45,7 @@ fn main() {
 
 fn compile(source: String) -> Result<(), Error> {
     let expr = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
-    // println!("Type: {:?}", type_of(&expr));
+    typecheck(&expr);
 
     let mut ctr = {
         let mut c = 0; move || {
@@ -58,10 +58,9 @@ fn compile(source: String) -> Result<(), Error> {
     let mut gen_var = || format!("var{}", ctr());
 
     println!("fn main() {}", "{");
-    let ret = emit(&Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), &mut gen_var)?;
+    let ret = emit(&expr, &mut gen_var)?;
     println!("println!(\"{}\", {})", "{}", ret);
     println!("{}", "}");
-    // emit(&expr, &mut gen_var)?;
     Ok(())
 }
 
@@ -85,6 +84,11 @@ fn type_of(term: &Term) -> Result<Type, Error> {
             if type_of(cond)? == Type::TyBool && type_of(t1)? == type_of(t2)? => type_of(t1),
         _ => Err(ThymeError::DoesNotTypecheck())?
     }
+}
+
+fn typecheck(term: &Term) -> Result<(), Error> {
+    type_of(term)?;
+    Ok(())
 }
 
 fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
@@ -117,6 +121,24 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
             println!("let {} = {} + {};", name, v1, v2);
             Ok(name)
 
+        },
+
+        Term::IfThenElse(cond, t1, t2) => {
+            let name = gen_var();
+            let truthy = gen_var();
+            let falsy = gen_var();
+            let c = emit(cond, gen_var)?;
+            println!("let {} = if {} {}{}{} else {}{}{};",
+                     name,
+                     c,
+                     "{",
+                     { let n = emit(t1, gen_var)?; format!("let {} = {}; {}", truthy, n, truthy) },
+                     "}",
+                     "{",
+                     { let n = emit(t2, gen_var)?; format!("let {} = {}; {}", falsy, n, falsy) },
+                     "}"
+            );
+            Ok(name)
         }
         _ => Err(ThymeError::NotImplemented())?
     }
