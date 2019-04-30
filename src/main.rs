@@ -95,6 +95,9 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
     F: FnMut() -> String
 {
 
+    let bra = || println!("{}", "{");
+    let ket = || println!("{}", "}");
+
     match term {
         Term::T => {
             let name = gen_var();
@@ -125,19 +128,27 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
 
         Term::IfThenElse(cond, t1, t2) => {
             let name = gen_var();
-            let truthy = gen_var();
-            let falsy = gen_var();
             let c = emit(cond, gen_var)?;
-            println!("let {} = if {} {}{}{} else {}{}{};",
-                     name,
-                     c,
-                     "{",
-                     { let n = emit(t1, gen_var)?; format!("let {} = {}; {}", truthy, n, truthy) },
-                     "}",
-                     "{",
-                     { let n = emit(t2, gen_var)?; format!("let {} = {}; {}", falsy, n, falsy) },
-                     "}"
-            );
+            // println!("let {} = if {} {}{}{} else {}{}{};",
+            //          name,
+            //          c,
+            //          "{",
+            //          { let n = emit(t1, gen_var)?; format!("let {} = {}; {}", truthy, n, truthy) },
+            //          "}",
+            //          "{",
+            //          { let n = emit(t2, gen_var)?; format!("let {} = {}; {}", falsy, n, falsy) },
+            //          "}"
+            println!("let {} = if {} ", name, c);
+            bra();
+            let truthy = emit(t1, gen_var)?;
+            println!("{}", truthy);
+            ket();
+            println!(" else ");
+            bra();
+            let falsy = emit(t1, gen_var)?;
+            println!("{}", falsy);
+            ket();
+            println!(";");
             Ok(name)
         }
         _ => Err(ThymeError::NotImplemented())?
