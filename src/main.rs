@@ -6,6 +6,7 @@ lalrpop_mod!(pub calculator2);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub emoji);        // Synthesised by LALRPOP.
 lalrpop_mod!(pub identifier);   // Synthesised by LALRPOP.
 lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
+lalrpop_mod!(pub ast_parser);   // Synthesised by LALRPOP.
 
 #[macro_use] extern crate failure;
 
@@ -145,6 +146,11 @@ mod test {
 
     use super::*;
 
+    #[test]
+    fn ast() {
+        assert!(ast_parser::TermParser::new().parse("1 + 1").is_ok());
+        assert!(ast_parser::TermParser::new().parse("23 + 69 + 1").is_ok());
+    }
 
     #[test]
     fn calculator1() {

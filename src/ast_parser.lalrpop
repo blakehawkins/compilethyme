@@ -1,0 +1,19 @@
+use std::str::FromStr;
+use ast::{Op, Term, Type};
+
+grammar;
+
+pub Term: Box<Term> = {
+//  <l:Term> <o:Op> <r:Term> => box Term::BinOp(o, l, r),
+  Num => box Term::Num(<>),
+  <l:Term> <o:Op> <r:Num> => box Term::BinOp(o, l, box Term::Num(r)),
+};
+
+Op: Op = {
+  "+" => Op::Add,
+};
+
+Num: i64 = {
+  r"\d+" => i64::from_str(<>).unwrap(),
+};
+
