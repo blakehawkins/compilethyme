@@ -1,0 +1,14 @@
+use std::str::FromStr;
+
+grammar;
+
+pub Term  = { Num, "(" <Term> ")", ID => format!("Id({})", <>), };
+
+Num: String = r"[0-9]+" => <>.into();
+
+match {
+  r"[0-9]+"
+} else {
+  r"\w+" => ID,
+  _
+}
