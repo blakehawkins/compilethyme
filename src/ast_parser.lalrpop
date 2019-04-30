@@ -5,15 +5,24 @@ grammar;
 
 pub Term: Box<Term> = {
 //  <l:Term> <o:Op> <r:Term> => box Term::BinOp(o, l, r),
-  Num => box Term::Num(<>),
-  <l:Term> <o:Op> <r:Num> => box Term::BinOp(o, l, box Term::Num(r)),
+  Num  => box Term::Num(<>),
+  r"true"  => box Term::T,
+  r"false" => box Term::F,
+  <l:Term> <o:Op> <r:Num>  => box Term::BinOp(o, l, box Term::Num(r)),
+  <l:Term> <o:Op> r"true"  => box Term::BinOp(o, l, box Term::T),
+  <l:Term> <o:Op> r"false" => box Term::BinOp(o, l, box Term::F),
 };
 
 Op: Op = {
   "+" => Op::Add,
+  "==" => Op::Eq,
 };
 
 Num: i64 = {
   r"\d+" => i64::from_str(<>).unwrap(),
 };
 
+// Bool: bool = {
+//   r"true" => true,
+//   r"false" => false,
+// };

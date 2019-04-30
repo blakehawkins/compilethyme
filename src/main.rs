@@ -195,6 +195,8 @@ mod test {
     fn ast() {
         assert!(ast_parser::TermParser::new().parse("1 + 1").is_ok());
         assert!(ast_parser::TermParser::new().parse("23 + 69 + 1").is_ok());
+        assert!(ast_parser::TermParser::new().parse("32 == 32").is_ok());
+        assert!(ast_parser::TermParser::new().parse("true == true").is_ok());
     }
 
     #[test]
