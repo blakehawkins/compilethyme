@@ -1,0 +1,9 @@
+use std::str::FromStr;
+
+grammar;
+
+pub Emoji: char = {
+  r":smile:" => '🙂',
+  r":frown:" => '🙁',
+  r":vomit:" => '🤮',
+};

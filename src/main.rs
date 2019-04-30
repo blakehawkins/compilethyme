@@ -3,6 +3,7 @@
 #[macro_use] extern crate lalrpop_util;
 lalrpop_mod!(pub calculator1);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub calculator2);  // Synthesised by LALRPOP.
+lalrpop_mod!(pub emoji);  // Synthesised by LALRPOP.
 #[macro_use] extern crate failure;
 
 use failure::Error;
@@ -29,6 +30,10 @@ enum Type {
 }
 
 fn main() {
+    println!(
+        "{}",
+        emoji::EmojiParser::new().parse(":vomit:").unwrap()
+    );
     match compile("foo".into()) {
         Ok(out) => println!("{}", out),
         Err(e) => eprintln!("Error compiling: {}", e)
@@ -82,6 +87,13 @@ mod test {
         assert!(calculator2::TermParser::new().parse("(22)").is_ok());
         assert!(calculator2::TermParser::new().parse("(((69)))").is_ok());
         assert!(calculator2::TermParser::new().parse("((1)").is_err());
+    }
+
+    #[test]
+    fn emoji() {
+        assert!(emoji::EmojiParser::new().parse(":smile:").is_ok());
+        assert!(emoji::EmojiParser::new().parse(":smile").is_err());
+        assert!(emoji::EmojiParser::new().parse("frown").is_err());
     }
 
     #[test]
