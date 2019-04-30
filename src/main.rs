@@ -20,18 +20,35 @@ fn main() {
     //     "{}",
     //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
     // );
-    match compile("foo".into()) {
+    match compile(None) {
         Ok(out) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
 }
 
-fn compile(source: String) -> Result<(), Error> {
-    let expr = Term::IfThenElse(
-        box Term::BinOp(Op::Eq, box Term::Num(4), box::Term::BinOp(Op::Add, box Term::Num(2), box Term::Num(2))),
-        box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)),
-        box Term::Num(10)
+fn compile(source: Option<String>) -> Result<(), Error> {
+    let expr = source.map(
+        |src| ast_parser::TermParser::new().parse(&src).unwrap()
+    ).unwrap_or_else(
+        || box Term::IfThenElse(
+            box Term::BinOp(
+                Op::Eq,
+                box Term::Num(4),
+                box::Term::BinOp(
+                    Op::Add,
+                    box Term::Num(2),
+                    box Term::Num(2)
+                )
+            ),
+            box Term::BinOp(
+                Op::Add,
+                box Term::Num(5),
+                box Term::Num(3)
+            ),
+            box Term::Num(10)
+        )
     );
+
     typecheck(&expr)?;
 
     let mut ctr = {
