@@ -1,6 +1,7 @@
 #[derive(Debug, Clone)]
 pub enum Op {
-    Add
+    Add,
+    Eq
 }
 
 #[derive(Debug, Clone)]

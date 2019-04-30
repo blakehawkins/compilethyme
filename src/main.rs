@@ -27,8 +27,8 @@ fn main() {
 }
 
 fn compile(source: String) -> Result<(), Error> {
-    let expr = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
-    typecheck(&expr);
+    let expr = Term::IfThenElse(box Term::BinOp(Op::Eq, box Term::Num(4), box::Term::BinOp(Op::Add, box Term::Num(2), box Term::Num(2))), box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
+    typecheck(&expr)?;
 
     let mut ctr = {
         let mut c = 0; move || {
@@ -50,8 +50,11 @@ fn compile(source: String) -> Result<(), Error> {
 
 #[derive(Debug, Fail)]
 enum ThymeError {
-    #[fail(display = "Does not typecheck")]
-    DoesNotTypecheck(),
+    #[fail(display = "Type error: {}", err)]
+    TypeError{ err: String },
+
+    #[fail(display = "The typechecker hit a branch it did not anticipate")]
+    TypeCheckerError(),
 
     #[fail(display = "Not implemented")]
     NotImplemented()
@@ -62,10 +65,31 @@ fn type_of(term: &Term) -> Result<Type, Error> {
         Term::T => Ok(Type::TyBool),
         Term::F => Ok(Type::TyBool),
         Term::Num(_) => Ok(Type::TyInt),
-        Term::BinOp(_, box Term::Num(_), box Term::Num(_)) => Ok(Type::TyInt),
-        Term::IfThenElse(cond, t1, t2)
-            if type_of(cond)? == Type::TyBool && type_of(t1)? == type_of(t2)? => type_of(t1),
-        _ => Err(ThymeError::DoesNotTypecheck())?
+        Term::BinOp(Op::Add, box Term::Num(_), box Term::Num(_)) => Ok(Type::TyInt),
+        Term::BinOp(Op::Eq, t1, t2) => {
+            if type_of(t1)? == type_of(t2)? {
+                Ok(Type::TyBool)
+            } else {
+                Err(ThymeError::TypeError{
+                    err: "Branches of equality comparison differ in type".into()
+                })?
+            }
+        },
+        Term::IfThenElse(cond, t1, t2) => {
+            if !(type_of(cond)? == Type::TyBool) {
+                Err(ThymeError::TypeError{
+                    err: "Condition is not of type Bool".into()
+                })?
+            } else if type_of(t1)? != type_of(t2)? {
+                Err(ThymeError::TypeError{
+                    err: "If branches have different types".into()
+                })?
+            } else {
+                Ok(type_of(t1)?)
+            }
+
+        }
+        _ => Err(ThymeError::TypeCheckerError())?
     }
 }
 
@@ -109,18 +133,18 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
 
         },
 
+        Term::BinOp(Op::Eq, t1, t2) => {
+            let name = gen_var();
+            let v1 = emit(t1, gen_var)?;
+            let v2 = emit(t2, gen_var)?;
+            println!("let {} = {} == {};", name, v1, v2);
+            Ok(name)
+
+        },
+
         Term::IfThenElse(cond, t1, t2) => {
             let name = gen_var();
             let c = emit(cond, gen_var)?;
-            // println!("let {} = if {} {}{}{} else {}{}{};",
-            //          name,
-            //          c,
-            //          "{",
-            //          { let n = emit(t1, gen_var)?; format!("let {} = {}; {}", truthy, n, truthy) },
-            //          "}",
-            //          "{",
-            //          { let n = emit(t2, gen_var)?; format!("let {} = {}; {}", falsy, n, falsy) },
-            //          "}"
             println!("let {} = if {} ", name, c);
             bra();
             let truthy = emit(t1, gen_var)?;
@@ -128,7 +152,7 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
             ket();
             println!(" else ");
             bra();
-            let falsy = emit(t1, gen_var)?;
+            let falsy = emit(t2, gen_var)?;
             println!("{}", falsy);
             ket();
             println!(";");
