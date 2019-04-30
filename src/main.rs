@@ -19,7 +19,7 @@ enum Term {
     F,
     Num(i64),
     BinOp(Op, Box<Term>, Box<Term>),
-    IfThenElse(Box<Term>, Box<Term>, Box<Term>)
+    IfThenElse(Box<Term>, Box<Term>, Box<Term>),
 }
 
 
@@ -30,19 +30,19 @@ enum Type {
 }
 
 fn main() {
-    println!(
-        "{}",
-        emoji::EmojiParser::new().parse(":vomit:").unwrap()
-    );
+    // println!(
+    //     "{}",
+    //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
+    // );
     match compile("foo".into()) {
-        Ok(out) => println!("{}", out),
+        Ok(out) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
 }
 
-fn compile(source: String) -> Result<String, Error> {
+fn compile(source: String) -> Result<(), Error> {
     let expr = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
-    println!("Type: {:?}", type_of(&expr));
+    // println!("Type: {:?}", type_of(&expr));
 
     let mut ctr = {
         let mut c = 0; move || {
@@ -54,10 +54,12 @@ fn compile(source: String) -> Result<String, Error> {
 
     let mut gen_var = || format!("var{}", ctr());
 
-    emit(&Term::T, &mut gen_var)?;
-    emit(&Term::Num(5), &mut gen_var)?;
-    emit(&expr, &mut gen_var)?;
-    Ok(source)
+    println!("fn main() {}", "{");
+    let ret = emit(&Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), &mut gen_var)?;
+    println!("println!(\"{}\", {})", "{}", ret);
+    println!("{}", "}");
+    // emit(&expr, &mut gen_var)?;
+    Ok(())
 }
 
 
@@ -102,6 +104,14 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
         Term::Num(n) => {
             let name = gen_var();
             println!("let {}: i64 = {};", name, n);
+            Ok(name)
+        }
+
+        Term::BinOp(Op::Add, t1, t2) => {
+            let name = gen_var();
+            let v1 = emit(t1, gen_var)?;
+            let v2 = emit(t2, gen_var)?;
+            println!("let {} = {} + {};", name, v1, v2);
             Ok(name)
 
         }
