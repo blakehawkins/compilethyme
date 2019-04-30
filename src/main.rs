@@ -5,6 +5,7 @@ lalrpop_mod!(pub calculator1);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub calculator2);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub emoji);        // Synthesised by LALRPOP.
 lalrpop_mod!(pub identifier);   // Synthesised by LALRPOP.
+lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
 
 #[macro_use] extern crate failure;
 
@@ -153,11 +154,21 @@ mod test {
         assert!(emoji::EmojiParser::new().parse("frown").is_err());
     }
 
+    #[test]
     fn identifier() {
         assert!(identifier::TermParser::new().parse("22").is_ok());
         assert!(identifier::TermParser::new().parse("(22)").is_ok());
         assert!(identifier::TermParser::new().parse("(((69)))").is_ok());
         assert!(identifier::TermParser::new().parse("((1)").is_err());
+    }
+
+    #[test]
+    fn fullcalc() {
+        assert!(calculator3::ExprParser::new().parse("1 + 1").is_ok());
+        assert!(calculator3::ExprParser::new().parse("2*(1 + 1)").is_ok());
+        assert!(calculator3::ExprParser::new().parse("69/(2 - 1)").is_ok());
+        assert!(calculator3::ExprParser::new().parse("  1 + 32    -1").is_ok());
+        assert!(calculator3::ExprParser::new().parse("( 1 + 32   -1").is_err());
     }
 
     #[test]
