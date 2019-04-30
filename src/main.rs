@@ -21,7 +21,7 @@ fn main() {
     //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
     // );
     match compile(Some("1 + 2 + 10".into())) {
-        Ok(out) => (),
+        Ok(_) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
 }
@@ -51,18 +51,16 @@ fn compile(source: Option<String>) -> Result<(), Error> {
 
     typecheck(&expr)?;
 
-    let mut ctr = {
+    let mut genvar = {
         let mut c = 0; move || {
             let ret = c;
             c = c + 1;
-            ret
+            format!("var{}", ret)
         }
     };
 
-    let mut gen_var = || format!("var{}", ctr());
-
     println!("fn main() {}", "{");
-    let ret = emit(&expr, &mut gen_var)?;
+    let ret = emit(&expr, &mut genvar)?;
     println!("println!(\"{}\", {})", "{}", ret);
     println!("{}", "}");
     Ok(())
@@ -90,7 +88,7 @@ fn type_of(term: &Term) -> Result<Type, Error> {
             let ty1 = type_of(t1)?;
             let ty2 = type_of(t2)?;
 
-            if (ty1 != Type::TyInt || ty2 != Type::TyInt) {
+            if ty1 != Type::TyInt || ty2 != Type::TyInt {
                 Err(ThymeError::TypeError{
                     err: "Non-numeric types in addition".into()
                 })?
@@ -130,7 +128,7 @@ fn typecheck(term: &Term) -> Result<(), Error> {
     Ok(())
 }
 
-fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
+fn emit<F>(term: &Term, genvar: &mut F) -> Result<String, Error> where
     F: FnMut() -> String
 {
 
@@ -139,52 +137,52 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
 
     match term {
         Term::T => {
-            let name = gen_var();
+            let name = genvar();
             println!("let {} = true;", name);
             Ok(name)
         }
 
         Term::F => {
-            let name = gen_var();
+            let name = genvar();
             println!("let {} = false;", name);
             Ok(name)
         }
 
         Term::Num(n) => {
-            let name = gen_var();
+            let name = genvar();
             println!("let {}: i64 = {};", name, n);
             Ok(name)
         }
 
         Term::BinOp(Op::Add, t1, t2) => {
-            let name = gen_var();
-            let v1 = emit(t1, gen_var)?;
-            let v2 = emit(t2, gen_var)?;
+            let name = genvar();
+            let v1 = emit(t1, genvar)?;
+            let v2 = emit(t2, genvar)?;
             println!("let {} = {} + {};", name, v1, v2);
             Ok(name)
 
         },
 
         Term::BinOp(Op::Eq, t1, t2) => {
-            let name = gen_var();
-            let v1 = emit(t1, gen_var)?;
-            let v2 = emit(t2, gen_var)?;
+            let name = genvar();
+            let v1 = emit(t1, genvar)?;
+            let v2 = emit(t2, genvar)?;
             println!("let {} = {} == {};", name, v1, v2);
             Ok(name)
 
         },
 
         Term::IfThenElse(cond, t1, t2) => {
-            let name = gen_var();
-            let c = emit(cond, gen_var)?;
+            let name = genvar();
+            let c = emit(cond, genvar)?;
             println!("let {} = if {} ", name, c);
             bra();
-            let truthy = emit(t1, gen_var)?;
+            let truthy = emit(t1, genvar)?;
             println!("{}", truthy);
             ket();
             println!(" else ");
             bra();
-            let falsy = emit(t2, gen_var)?;
+            let falsy = emit(t2, genvar)?;
             println!("{}", falsy);
             ket();
             println!(";");
