@@ -9,45 +9,36 @@ lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub ast_parser);   // Synthesised by LALRPOP.
 
 #[macro_use] extern crate failure;
+#[macro_use] extern crate structopt;
 
 use failure::Error;
+use structopt::StructOpt;
 
 use ast::{Op, Term, Type};
 mod ast;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "compilerthyme", about = "Compile thyme y'all.")]
+struct CliOpts {
+    input: String
+}
+
 
 fn main() {
     // println!(
     //     "{}",
     //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
     // );
-    match compile(Some("1 + 2 + 10".into())) {
+    let opt = CliOpts::from_args();
+    match compile(&opt.input) {
         Ok(_) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
 }
 
-fn compile(source: Option<String>) -> Result<(), Error> {
-    let expr = source.map(
-        |src| ast_parser::TermParser::new().parse(&src).unwrap()
-    ).unwrap_or_else(
-        || box Term::IfThenElse(
-            box Term::BinOp(
-                Op::Eq,
-                box Term::Num(4),
-                box::Term::BinOp(
-                    Op::Add,
-                    box Term::Num(2),
-                    box Term::Num(2)
-                )
-            ),
-            box Term::BinOp(
-                Op::Add,
-                box Term::Num(5),
-                box Term::Num(3)
-            ),
-            box Term::Num(10)
-        )
-    );
+fn compile(file: &str) -> Result<(), Error> {
+    let source = std::fs::read_to_string(file)?;
+    let expr = ast_parser::TermParser::new().parse(&source).unwrap();
 
     typecheck(&expr)?;
 

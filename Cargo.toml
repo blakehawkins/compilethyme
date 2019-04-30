@@ -11,6 +11,7 @@ authors = [
 failure      = "0.1.5"
 lalrpop-util = "0.16.3"
 regex        = "0.2.0"
+structopt    = "0.2"
 
 [build-dependencies]
 lalrpop = "0.16.3"
