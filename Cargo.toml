@@ -1,6 +1,16 @@
 [package]
 name = "compilethyme"
 version = "0.1.0"
-authors = ["Richard Lupton <richard.lupton@gmail.com>"]
+build "build.rs"  # LALRPOP preprocessing
+authors = [
+  "Richard Lupton <richard.lupton@gmail.com>",
+  "Blake Hawkins <blake.hawkins.11@gmail.com>"
+]
 
 [dependencies]
+failure      = "0.1.5"
+lalrpop-util = "0.16.3"
+regex        = "0.2.0"
+
+[build-dependencies]
+lalrpop = "0.16.3"
