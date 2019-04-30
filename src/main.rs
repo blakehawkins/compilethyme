@@ -75,3 +75,16 @@ fn calculator2() {
   assert!(calculator2::TermParser::new().parse("(((69)))").is_ok());
   assert!(calculator2::TermParser::new().parse("((1)").is_err());
 }
+
+#[test]
+fn typecheck_fail() {
+    let term = Term::IfThenElse(box Term::Num(4), box Term::Num(6), box Term::Num(7));
+    assert!(type_of(&term).is_err())
+}
+
+#[test]
+fn typecheck_pass() -> Result<(), Error> {
+    let term = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
+    assert_eq!(type_of(&term)?, Type::TyInt);
+    Ok(())
+}
