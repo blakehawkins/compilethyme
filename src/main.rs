@@ -45,7 +45,7 @@ fn main() {
 
 fn compile(source: String) -> Result<(), Error> {
     let expr = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
-    typecheck(&expr);
+    typecheck(&expr)?;
 
     let mut ctr = {
         let mut c = 0; move || {
@@ -67,8 +67,11 @@ fn compile(source: String) -> Result<(), Error> {
 
 #[derive(Debug, Fail)]
 enum ThymeError {
-    #[fail(display = "Does not typecheck")]
-    DoesNotTypecheck(),
+    #[fail(display = "Type error: {}", err)]
+    TypeError{ err: String },
+
+    #[fail(display = "The typechecker hit a branch it did not anticipate")]
+    TypeCheckerError(),
 
     #[fail(display = "Not implemented")]
     NotImplemented()
@@ -80,9 +83,21 @@ fn type_of(term: &Term) -> Result<Type, Error> {
         Term::F => Ok(Type::TyBool),
         Term::Num(_) => Ok(Type::TyInt),
         Term::BinOp(_, box Term::Num(_), box Term::Num(_)) => Ok(Type::TyInt),
-        Term::IfThenElse(cond, t1, t2)
-            if type_of(cond)? == Type::TyBool && type_of(t1)? == type_of(t2)? => type_of(t1),
-        _ => Err(ThymeError::DoesNotTypecheck())?
+        Term::IfThenElse(cond, t1, t2) => {
+            if !(type_of(cond)? == Type::TyBool) {
+                Err(ThymeError::TypeError{
+                    err: "Condition is not of type Bool".into()
+                })?
+            } else if type_of(t1)? != type_of(t2)? {
+                Err(ThymeError::TypeError{
+                    err: "If branches have different types".into()
+                })?
+            } else {
+                Ok(type_of(t1)?)
+            }
+
+        }
+        _ => Err(ThymeError::TypeCheckerError())?
     }
 }
 
@@ -129,15 +144,6 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
         Term::IfThenElse(cond, t1, t2) => {
             let name = gen_var();
             let c = emit(cond, gen_var)?;
-            // println!("let {} = if {} {}{}{} else {}{}{};",
-            //          name,
-            //          c,
-            //          "{",
-            //          { let n = emit(t1, gen_var)?; format!("let {} = {}; {}", truthy, n, truthy) },
-            //          "}",
-            //          "{",
-            //          { let n = emit(t2, gen_var)?; format!("let {} = {}; {}", falsy, n, falsy) },
-            //          "}"
             println!("let {} = if {} ", name, c);
             bra();
             let truthy = emit(t1, gen_var)?;
