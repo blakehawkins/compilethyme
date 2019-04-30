@@ -20,7 +20,7 @@ fn main() {
     //     "{}",
     //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
     // );
-    match compile(None) {
+    match compile(Some("1 + 2 + 10".into())) {
         Ok(out) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
@@ -86,7 +86,18 @@ fn type_of(term: &Term) -> Result<Type, Error> {
         Term::T => Ok(Type::TyBool),
         Term::F => Ok(Type::TyBool),
         Term::Num(_) => Ok(Type::TyInt),
-        Term::BinOp(Op::Add, box Term::Num(_), box Term::Num(_)) => Ok(Type::TyInt),
+        Term::BinOp(Op::Add, t1, t2) => {
+            let ty1 = type_of(t1)?;
+            let ty2 = type_of(t2)?;
+
+            if (ty1 != Type::TyInt || ty2 != Type::TyInt) {
+                Err(ThymeError::TypeError{
+                    err: "Non-numeric types in addition".into()
+                })?
+            } else {
+                Ok(Type::TyInt)
+            }
+        },
         Term::BinOp(Op::Eq, t1, t2) => {
             if type_of(t1)? == type_of(t2)? {
                 Ok(Type::TyBool)
