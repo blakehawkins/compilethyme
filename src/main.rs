@@ -13,7 +13,8 @@ use failure::Error;
 
 #[derive(Debug, Clone)]
 enum Op {
-    Add
+    Add,
+    Eq
 }
 
 #[derive(Debug, Clone)]
@@ -44,7 +45,7 @@ fn main() {
 }
 
 fn compile(source: String) -> Result<(), Error> {
-    let expr = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
+    let expr = Term::IfThenElse(box Term::BinOp(Op::Eq, box Term::Num(4), box::Term::BinOp(Op::Add, box Term::Num(2), box Term::Num(2))), box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
     typecheck(&expr)?;
 
     let mut ctr = {
@@ -82,7 +83,16 @@ fn type_of(term: &Term) -> Result<Type, Error> {
         Term::T => Ok(Type::TyBool),
         Term::F => Ok(Type::TyBool),
         Term::Num(_) => Ok(Type::TyInt),
-        Term::BinOp(_, box Term::Num(_), box Term::Num(_)) => Ok(Type::TyInt),
+        Term::BinOp(Op::Add, box Term::Num(_), box Term::Num(_)) => Ok(Type::TyInt),
+        Term::BinOp(Op::Eq, t1, t2) => {
+            if type_of(t1)? == type_of(t2)? {
+                Ok(Type::TyBool)
+            } else {
+                Err(ThymeError::TypeError{
+                    err: "Branches of equality comparison differ in type".into()
+                })?
+            }
+        },
         Term::IfThenElse(cond, t1, t2) => {
             if !(type_of(cond)? == Type::TyBool) {
                 Err(ThymeError::TypeError{
@@ -141,6 +151,15 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
 
         },
 
+        Term::BinOp(Op::Eq, t1, t2) => {
+            let name = gen_var();
+            let v1 = emit(t1, gen_var)?;
+            let v2 = emit(t2, gen_var)?;
+            println!("let {} = {} == {};", name, v1, v2);
+            Ok(name)
+
+        },
+
         Term::IfThenElse(cond, t1, t2) => {
             let name = gen_var();
             let c = emit(cond, gen_var)?;
@@ -151,7 +170,7 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
             ket();
             println!(" else ");
             bra();
-            let falsy = emit(t1, gen_var)?;
+            let falsy = emit(t2, gen_var)?;
             println!("{}", falsy);
             ket();
             println!(";");
