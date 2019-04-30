@@ -43,6 +43,20 @@ fn main() {
 fn compile(source: String) -> Result<String, Error> {
     let expr = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
     println!("Type: {:?}", type_of(&expr));
+
+    let mut ctr = {
+        let mut c = 0; move || {
+            let ret = c;
+            c = c + 1;
+            ret
+        }
+    };
+
+    let mut gen_var = || format!("var{}", ctr());
+
+    emit(&Term::T, &mut gen_var)?;
+    emit(&Term::Num(5), &mut gen_var)?;
+    emit(&expr, &mut gen_var)?;
     Ok(source)
 }
 
@@ -50,7 +64,10 @@ fn compile(source: String) -> Result<String, Error> {
 #[derive(Debug, Fail)]
 enum ThymeError {
     #[fail(display = "Does not typecheck")]
-    DoesNotTypecheck()
+    DoesNotTypecheck(),
+
+    #[fail(display = "Not implemented")]
+    NotImplemented()
 }
 
 fn type_of(term: &Term) -> Result<Type, Error> {
@@ -63,6 +80,34 @@ fn type_of(term: &Term) -> Result<Type, Error> {
             if type_of(cond)? == Type::TyBool && type_of(t1)? == type_of(t2)? => type_of(t1),
         _ => Err(ThymeError::DoesNotTypecheck())?
     }
+}
+
+fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
+    F: FnMut() -> String
+{
+
+    match term {
+        Term::T => {
+            let name = gen_var();
+            println!("let {} = true;", name);
+            Ok(name)
+        }
+
+        Term::F => {
+            let name = gen_var();
+            println!("let {} = false;", name);
+            Ok(name)
+        }
+
+        Term::Num(n) => {
+            let name = gen_var();
+            println!("let {}: i64 = {};", name, n);
+            Ok(name)
+
+        }
+        _ => Err(ThymeError::NotImplemented())?
+    }
+
 }
 
 
