@@ -27,7 +27,11 @@ fn main() {
 }
 
 fn compile(source: String) -> Result<(), Error> {
-    let expr = Term::IfThenElse(box Term::BinOp(Op::Eq, box Term::Num(4), box::Term::BinOp(Op::Add, box Term::Num(2), box Term::Num(2))), box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
+    let expr = Term::IfThenElse(
+        box Term::BinOp(Op::Eq, box Term::Num(4), box::Term::BinOp(Op::Add, box Term::Num(2), box Term::Num(2))),
+        box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)),
+        box Term::Num(10)
+    );
     typecheck(&expr)?;
 
     let mut ctr = {
