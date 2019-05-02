@@ -30,7 +30,7 @@ fn main() {
     //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
     // );
     let opt = CliOpts::from_args();
-    match compile(&opt.input) {
+    match compile(Some(opt.input)) {
         Ok(_) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
@@ -189,12 +189,12 @@ fn emit<F>(term: &Expr, gen_var: &mut F) -> Result<String, Error> where
             let c = emit(cond, gen_var)?;
             println!("let {} = if {} ", name, c);
             bra();
-            let truthy = emit(t1, genvar)?;
+            let truthy = emit(t1, gen_var)?;
             println!("{}", truthy);
             ket();
             println!(" else ");
             bra();
-            let falsy = emit(t2, genvar)?;
+            let falsy = emit(t2, gen_var)?;
             println!("{}", falsy);
             ket();
             println!(";");

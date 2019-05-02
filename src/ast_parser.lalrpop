@@ -5,6 +5,7 @@ grammar;
 // #[LALR] grammar;  // User LR(1) when possible.
 
 pub Expr: Box<Expr> = {
+  L_PAREN <e:Expr> R_PAREN => e,
   <t:Term> => box Expr::Trm(t),
   <l:Expr> <o:Op> <r:Term> => box Expr::BinOp(o, l, box Expr::Trm(r)),
   <p:Expr> TERN_Q <a:Expr> TERN_E <b:Term> => box Expr::IfThenElse(p, a, box Expr::Trm(b)),
@@ -32,6 +33,8 @@ Bool: bool = {
 
 match {
   "?" => TERN_Q,
+  "(" => L_PAREN,
+  ")" => R_PAREN,
 } else {
   ":"     => TERN_E,
   "true"  => TRUE,
