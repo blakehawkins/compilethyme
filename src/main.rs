@@ -12,7 +12,7 @@ lalrpop_mod!(pub ast_parser);   // Synthesised by LALRPOP.
 
 use failure::Error;
 
-use ast::{Op, Term, Type};
+use ast::{Op, Expr, Term, Type};
 mod ast;
 
 fn main() {
@@ -28,24 +28,24 @@ fn main() {
 
 fn compile(source: Option<String>) -> Result<(), Error> {
     let expr = source.map(
-        |src| ast_parser::TermParser::new().parse(&src).unwrap()
+        |src| ast_parser::ExprParser::new().parse(&src).unwrap()
     ).unwrap_or_else(
-        || box Term::IfThenElse(
-            box Term::BinOp(
+        || box Expr::IfThenElse(
+            box Expr::BinOp(
                 Op::Eq,
-                box Term::Num(4),
-                box::Term::BinOp(
+                box Expr::Trm(Term::Num(4)),
+                box::Expr::BinOp(
                     Op::Add,
-                    box Term::Num(2),
-                    box Term::Num(2)
+                    box Expr::Trm(Term::Num(2)),
+                    box Expr::Trm(Term::Num(2)),
                 )
             ),
-            box Term::BinOp(
+            box Expr::BinOp(
                 Op::Add,
-                box Term::Num(5),
-                box Term::Num(3)
+                box Expr::Trm(Term::Num(5)),
+                box Expr::Trm(Term::Num(3)),
             ),
-            box Term::Num(10)
+            box Expr::Trm(Term::Num(10))
         )
     );
 
@@ -81,12 +81,12 @@ enum ThymeError {
     NotImplemented()
 }
 
-fn type_of(term: &Term) -> Result<Type, Error> {
+fn type_of(term: &Expr) -> Result<Type, Error> {
     match term {
-        Term::T => Ok(Type::TyBool),
-        Term::F => Ok(Type::TyBool),
-        Term::Num(_) => Ok(Type::TyInt),
-        Term::BinOp(Op::Add, t1, t2) => {
+        Expr::Trm(Term::T) => Ok(Type::TyBool),
+        Expr::Trm(Term::F) => Ok(Type::TyBool),
+        Expr::Trm(Term::Num(_)) => Ok(Type::TyInt),
+        Expr::BinOp(Op::Add, t1, t2) => {
             let ty1 = type_of(t1)?;
             let ty2 = type_of(t2)?;
 
@@ -98,7 +98,7 @@ fn type_of(term: &Term) -> Result<Type, Error> {
                 Ok(Type::TyInt)
             }
         },
-        Term::BinOp(Op::Eq, t1, t2) => {
+        Expr::BinOp(Op::Eq, t1, t2) => {
             if type_of(t1)? == type_of(t2)? {
                 Ok(Type::TyBool)
             } else {
@@ -107,7 +107,7 @@ fn type_of(term: &Term) -> Result<Type, Error> {
                 })?
             }
         },
-        Term::IfThenElse(cond, t1, t2) => {
+        Expr::IfThenElse(cond, t1, t2) => {
             if !(type_of(cond)? == Type::TyBool) {
                 Err(ThymeError::TypeError{
                     err: "Condition is not of type Bool".into()
@@ -125,12 +125,12 @@ fn type_of(term: &Term) -> Result<Type, Error> {
     }
 }
 
-fn typecheck(term: &Term) -> Result<(), Error> {
+fn typecheck(term: &Expr) -> Result<(), Error> {
     type_of(term)?;
     Ok(())
 }
 
-fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
+fn emit<F>(term: &Expr, gen_var: &mut F) -> Result<String, Error> where
     F: FnMut() -> String
 {
 
@@ -138,25 +138,25 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
     let ket = || println!("{}", "}");
 
     match term {
-        Term::T => {
+        Expr::Trm(Term::T) => {
             let name = gen_var();
             println!("let {} = true;", name);
             Ok(name)
         }
 
-        Term::F => {
+        Expr::Trm(Term::F) => {
             let name = gen_var();
             println!("let {} = false;", name);
             Ok(name)
         }
 
-        Term::Num(n) => {
+        Expr::Trm(Term::Num(n)) => {
             let name = gen_var();
             println!("let {}: i64 = {};", name, n);
             Ok(name)
         }
 
-        Term::BinOp(Op::Add, t1, t2) => {
+        Expr::BinOp(Op::Add, t1, t2) => {
             let name = gen_var();
             let v1 = emit(t1, gen_var)?;
             let v2 = emit(t2, gen_var)?;
@@ -165,7 +165,7 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
 
         },
 
-        Term::BinOp(Op::Eq, t1, t2) => {
+        Expr::BinOp(Op::Eq, t1, t2) => {
             let name = gen_var();
             let v1 = emit(t1, gen_var)?;
             let v2 = emit(t2, gen_var)?;
@@ -174,7 +174,7 @@ fn emit<F>(term: &Term, gen_var: &mut F) -> Result<String, Error> where
 
         },
 
-        Term::IfThenElse(cond, t1, t2) => {
+        Expr::IfThenElse(cond, t1, t2) => {
             let name = gen_var();
             let c = emit(cond, gen_var)?;
             println!("let {} = if {} ", name, c);
@@ -204,10 +204,12 @@ mod test {
 
     #[test]
     fn ast() {
-        assert!(ast_parser::TermParser::new().parse("1 + 1").is_ok());
-        assert!(ast_parser::TermParser::new().parse("23 + 69 + 1").is_ok());
-        assert!(ast_parser::TermParser::new().parse("32 == 32").is_ok());
-        assert!(ast_parser::TermParser::new().parse("true == true").is_ok());
+        assert!(ast_parser::ExprParser::new().parse("1 + 1").is_ok());
+        assert!(ast_parser::ExprParser::new().parse("23 + 69 + 1").is_ok());
+        assert!(ast_parser::ExprParser::new().parse("32 == 32").is_ok());
+        assert!(ast_parser::ExprParser::new().parse("true == true").is_ok());
+        assert!(ast_parser::ExprParser::new().parse("true ? 1 : 2").is_ok());
+        assert!(ast_parser::ExprParser::new().parse("1 ?: 2").is_err());
     }
 
     #[test]
@@ -252,13 +254,13 @@ mod test {
 
     #[test]
     fn typecheck_fail() {
-        let term = Term::IfThenElse(box Term::Num(4), box Term::Num(6), box Term::Num(7));
+        let term = Expr::IfThenElse(box Expr::Trm(Term::Num(4)), box Expr::Trm(Term::Num(6)), box Expr::Trm(Term::Num(7)));
         assert!(type_of(&term).is_err())
     }
 
     #[test]
     fn typecheck_pass() -> Result<(), Error> {
-        let term = Term::IfThenElse(box Term::T, box Term::BinOp(Op::Add, box Term::Num(5), box Term::Num(3)), box Term::Num(10));
+        let term = Expr::IfThenElse(box Expr::Trm(Term::T), box Expr::BinOp(Op::Add, box Expr::Trm(Term::Num(5)), box Expr::Trm(Term::Num(3))), box Expr::Trm(Term::Num(10)));
         assert_eq!(type_of(&term)?, Type::TyInt);
         Ok(())
     }

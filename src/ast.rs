@@ -5,12 +5,17 @@ pub enum Op {
 }
 
 #[derive(Debug, Clone)]
+pub enum Expr {
+    Trm(Term),
+    BinOp(Op, Box<Expr>, Box<Expr>),
+    IfThenElse(Box<Expr>, Box<Expr>, Box<Expr>),
+}
+
+#[derive(Debug, Clone)]
 pub enum Term {
     T,
     F,
     Num(i64),
-    BinOp(Op, Box<Term>, Box<Term>),
-    IfThenElse(Box<Term>, Box<Term>, Box<Term>),
 }
 
 #[derive(Debug, Clone, PartialEq)]

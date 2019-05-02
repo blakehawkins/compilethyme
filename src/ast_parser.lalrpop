@@ -1,20 +1,23 @@
 use std::str::FromStr;
-use ast::{Op, Term, Type};
+use ast::{Op, Expr, Term, Type};
 
 grammar;
+// #[LALR] grammar;  // User LR(1) when possible.
 
-pub Term: Box<Term> = {
-//  <l:Term> <o:Op> <r:Term> => box Term::BinOp(o, l, r),
-  Num  => box Term::Num(<>),
-  r"true"  => box Term::T,
-  r"false" => box Term::F,
-  <l:Term> <o:Op> <r:Num>  => box Term::BinOp(o, l, box Term::Num(r)),
-  <l:Term> <o:Op> r"true"  => box Term::BinOp(o, l, box Term::T),
-  <l:Term> <o:Op> r"false" => box Term::BinOp(o, l, box Term::F),
+pub Expr: Box<Expr> = {
+  <t:Term> => box Expr::Trm(t),
+  <l:Expr> <o:Op> <r:Term> => box Expr::BinOp(o, l, box Expr::Trm(r)),
+  <p:Expr> TERN_Q <a:Expr> TERN_E <b:Term> => box Expr::IfThenElse(p, a, box Expr::Trm(b)),
+};
+
+pub Term: Term = {
+  Num   => Term::Num(<>),
+  TRUE  => Term::T,
+  FALSE => Term::F,
 };
 
 Op: Op = {
-  "+" => Op::Add,
+  "+"  => Op::Add,
   "==" => Op::Eq,
 };
 
@@ -22,7 +25,16 @@ Num: i64 = {
   r"\d+" => i64::from_str(<>).unwrap(),
 };
 
-// Bool: bool = {
-//   r"true" => true,
-//   r"false" => false,
-// };
+Bool: bool = {
+  TRUE  => true,
+  FALSE => false,
+};
+
+match {
+  "?" => TERN_Q,
+} else {
+  ":"     => TERN_E,
+  "true"  => TRUE,
+  "false" => FALSE,
+  _
+}
