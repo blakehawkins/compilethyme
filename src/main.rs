@@ -9,19 +9,29 @@ lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub ast_parser);   // Synthesised by LALRPOP.
 
 #[macro_use] extern crate failure;
+#[macro_use] extern crate structopt;
 
 use failure::Error;
+use structopt::StructOpt;
 
 use ast::{Op, Expr, Term, Type};
 mod ast;
+
+#[derive(Debug, StructOpt)]
+#[structopt(name = "compilerthyme", about = "Compile thyme y'all.")]
+struct CliOpts {
+    input: String
+}
+
 
 fn main() {
     // println!(
     //     "{}",
     //     emoji::EmojiParser::new().parse(":vomit:").unwrap()
     // );
-    match compile(Some("1 + 2 + 10".into())) {
-        Ok(out) => (),
+    let opt = CliOpts::from_args();
+    match compile(&opt.input) {
+        Ok(_) => (),
         Err(e) => eprintln!("Error compiling: {}", e)
     }
 }
@@ -49,20 +59,19 @@ fn compile(source: Option<String>) -> Result<(), Error> {
         )
     );
 
+    println!("{:?}", expr);
     typecheck(&expr)?;
 
-    let mut ctr = {
+    let mut genvar = {
         let mut c = 0; move || {
             let ret = c;
             c = c + 1;
-            ret
+            format!("var{}", ret)
         }
     };
 
-    let mut gen_var = || format!("var{}", ctr());
-
     println!("fn main() {}", "{");
-    let ret = emit(&expr, &mut gen_var)?;
+    let ret = emit(&expr, &mut genvar)?;
     println!("println!(\"{}\", {})", "{}", ret);
     println!("{}", "}");
     Ok(())
@@ -90,9 +99,9 @@ fn type_of(term: &Expr) -> Result<Type, Error> {
             let ty1 = type_of(t1)?;
             let ty2 = type_of(t2)?;
 
-            if (ty1 != Type::TyInt || ty2 != Type::TyInt) {
+            if ty1 != Type::TyInt || ty2 != Type::TyInt {
                 Err(ThymeError::TypeError{
-                    err: "Non-numeric types in addition".into()
+                    err: format!("Non numeric types in addition; {:?}: {:?}, {:?}, {:?}", t1, ty1, t2, ty2)
                 })?
             } else {
                 Ok(Type::TyInt)
@@ -131,7 +140,7 @@ fn typecheck(term: &Expr) -> Result<(), Error> {
 }
 
 fn emit<F>(term: &Expr, gen_var: &mut F) -> Result<String, Error> where
-    F: FnMut() -> String
+   F: FnMut() -> String
 {
 
     let bra = || println!("{}", "{");
@@ -146,6 +155,7 @@ fn emit<F>(term: &Expr, gen_var: &mut F) -> Result<String, Error> where
 
         Expr::Trm(Term::F) => {
             let name = gen_var();
+
             println!("let {} = false;", name);
             Ok(name)
         }
@@ -179,12 +189,12 @@ fn emit<F>(term: &Expr, gen_var: &mut F) -> Result<String, Error> where
             let c = emit(cond, gen_var)?;
             println!("let {} = if {} ", name, c);
             bra();
-            let truthy = emit(t1, gen_var)?;
+            let truthy = emit(t1, genvar)?;
             println!("{}", truthy);
             ket();
             println!(" else ");
             bra();
-            let falsy = emit(t2, gen_var)?;
+            let falsy = emit(t2, genvar)?;
             println!("{}", falsy);
             ket();
             println!(";");
