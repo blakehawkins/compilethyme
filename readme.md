@@ -1,1 +1,3 @@
-Hello world
+A toy compiler
+
+`cargo +nightly build`
