@@ -8,10 +8,12 @@ authors = [
 ]
 
 [dependencies]
-failure      = "0.1.5"
-lalrpop-util = "0.16.3"
+anyhow = "1.0"
+lalrpop-util = "0.19"
 regex        = "0.2.0"
 structopt    = "0.2"
+thiserror = "1.0.32"
 
 [build-dependencies]
-lalrpop = "0.16.3"
+anyhow = "1.0"
+lalrpop = "0.19"

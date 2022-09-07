@@ -8,13 +8,15 @@ lalrpop_mod!(pub identifier);   // Synthesised by LALRPOP.
 lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub ast_parser);   // Synthesised by LALRPOP.
 
-#[macro_use] extern crate failure;
+#[macro_use] extern crate anyhow;
 #[macro_use] extern crate structopt;
+#[macro_use] extern crate thiserror;
 
-use failure::Error;
 use structopt::StructOpt;
+use anyhow::Error;
+use thiserror::Error;
 
-use ast::{Op, Expr, Term, Type};
+use crate::ast::{Op, Expr, Term, Type};
 mod ast;
 
 #[derive(Debug, StructOpt)]
@@ -78,15 +80,15 @@ fn compile(source: Option<String>) -> Result<(), Error> {
 }
 
 
-#[derive(Debug, Fail)]
+#[derive(Debug, Error)]
 enum ThymeError {
-    #[fail(display = "Type error: {}", err)]
+    #[error("Type error: {err}")]
     TypeError{ err: String },
 
-    #[fail(display = "The typechecker hit a branch it did not anticipate")]
+    #[error("The typechecker hit a branch it did not anticipate")]
     TypeCheckerError(),
 
-    #[fail(display = "Not implemented")]
+    #[error("Not implemented")]
     NotImplemented()
 }
 
