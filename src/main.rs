@@ -61,7 +61,6 @@ fn compile(source: Option<String>) -> Result<(), Error> {
         )
     );
 
-    println!("{:?}", expr);
     typecheck(&expr)?;
 
     let mut genvar = {
