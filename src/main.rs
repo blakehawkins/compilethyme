@@ -9,10 +9,10 @@ lalrpop_mod!(pub calculator3);  // Synthesised by LALRPOP.
 lalrpop_mod!(pub ast_parser);   // Synthesised by LALRPOP.
 
 #[macro_use] extern crate anyhow;
-#[macro_use] extern crate structopt;
+#[macro_use] extern crate clap;
 #[macro_use] extern crate thiserror;
 
-use structopt::StructOpt;
+use clap::StructOpt;
 use anyhow::Error;
 use thiserror::Error;
 
